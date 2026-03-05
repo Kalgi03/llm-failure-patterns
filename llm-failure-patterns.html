@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Failure Patterns — Open Source AI Failure Database</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:       #060609;
+            --s1:       #0d0d14;
+            --s2:       #13131e;
+            --s3:       #1a1a28;
+            --s4:       #222235;
+            --border:   rgba(255,255,255,0.06);
+            --border-md:rgba(255,255,255,0.1);
+            --border-hi:rgba(255,255,255,0.16);
+            --t1: #eeeef6;
+            --t2: #9090b0;
+            --t3: #55556e;
+            --t4: #333348;
+            --accent:   #4effd4;
+            --accent2:  #00d4b4;
+            --adim:     rgba(78,255,212,0.08);
+            --aglow:    rgba(78,255,212,0.15);
+            --red:   #ff4d6a; --rdim: rgba(255,77,106,0.1);
+            --purp: #b388ff; --pdim: rgba(179,136,255,0.1);
+            --blue:  #64b5f6; --bdim: rgba(100,181,246,0.1);
+            --oran:  #ffa04d; --odim: rgba(255,160,77,0.1);
+            --gree:  #4dd68a; --gdim: rgba(77,214,138,0.1);
+            --yell:  #ffd04d; --ydim: rgba(255,208,77,0.1);
+            --font-d: 'Syne', sans-serif;
+            --font-m: 'DM Mono', monospace;
+            --font-b: 'DM Sans', sans-serif;
+            --r: 8px; --rl: 14px; --rxl: 20px;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg);
+            color: var(--t1);
+            font-family: var(--font-b);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated mesh background ── */
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-mesh::before {
+            content: '';
+            position: absolute;
+            width: 900px; height: 900px;
+            top: -300px; left: 50%; transform: translateX(-50%);
+            background: radial-gradient(ellipse at center,
+                rgba(78,255,212,0.04) 0%,
+                rgba(100,181,246,0.02) 40%,
+                transparent 70%);
+            animation: meshFloat 12s ease-in-out infinite alternate;
+        }
+        .bg-mesh::after {
+            content: '';
+            position: absolute;
+            width: 600px; height: 600px;
+            bottom: -100px; right: -100px;
+            background: radial-gradient(ellipse at center,
+                rgba(179,136,255,0.03) 0%,
+                transparent 60%);
+            animation: meshFloat2 16s ease-in-out infinite alternate;
+        }
+        @keyframes meshFloat {
+            from { transform: translateX(-50%) translateY(0) scale(1); }
+            to   { transform: translateX(-50%) translateY(-40px) scale(1.08); }
+        }
+        @keyframes meshFloat2 {
+            from { transform: scale(1) rotate(0deg); }
+            to   { transform: scale(1.15) rotate(8deg); }
+        }
+
+        /* Dot grid */
+        .bg-dots {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .wrap { position: relative; z-index: 1; }
+
+        /* ══════════════════════════════
+           HEADER
+        ══════════════════════════════ */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            border-bottom: 1px solid var(--border);
+            background: rgba(6,6,9,0.82);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .hdr {
+            max-width: 1120px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 58px;
+        }
+        .logo {
+            display: flex; align-items: center; gap: 11px;
+            text-decoration: none; user-select: none;
+        }
+        .logo-icon {
+            width: 32px; height: 32px; border-radius: 9px;
+            background: linear-gradient(135deg, var(--accent), rgba(78,255,212,0.3));
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-m); font-size: 9px; font-weight: 500;
+            color: #060609; letter-spacing: -0.3px;
+            box-shadow: 0 0 20px var(--aglow), 0 0 40px rgba(78,255,212,0.06);
+        }
+        .logo-name {
+            font-family: var(--font-d); font-weight: 700; font-size: 15px;
+            color: var(--t1); letter-spacing: -0.4px;
+        }
+        .logo-name span { color: var(--t3); font-weight: 400; }
+        .hdr-right { display: flex; align-items: center; gap: 8px; }
+        .pill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 999px;
+            font-family: var(--font-m); font-size: 11px;
+            border: 1px solid var(--border); color: var(--t2);
+            background: var(--s1); cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pill:hover { border-color: var(--border-md); color: var(--t1); }
+        .pill-accent {
+            background: var(--adim);
+            border-color: rgba(78,255,212,0.2);
+            color: var(--accent);
+        }
+        .pill-accent:hover { background: rgba(78,255,212,0.12); }
+        .star { color: var(--yell); }
+
+        /* ══════════════════════════════
+           HERO
+        ══════════════════════════════ */
+        .hero {
+            max-width: 1120px; margin: 0 auto; padding: 72px 24px 56px;
+            text-align: center;
+        }
+        .hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-m); font-size: 11px; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--accent);
+            padding: 6px 14px; border-radius: 999px;
+            border: 1px solid rgba(78,255,212,0.2);
+            background: rgba(78,255,212,0.05);
+            margin-bottom: 28px;
+            animation: fadeUp 0.5s ease both;
+        }
+        .live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px var(--accent);
+            animation: livePulse 2s infinite;
+        }
+        @keyframes livePulse {
+            0%,100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px var(--accent); }
+            50%      { opacity: 0.5; transform: scale(0.7); box-shadow: none; }
+        }
+        .hero h1 {
+            font-family: var(--font-d); font-weight: 800;
+            font-size: clamp(38px, 6vw, 64px);
+            letter-spacing: -2.5px; line-height: 1.02;
+            margin-bottom: 20px;
+            background: linear-gradient(180deg, #fff 20%, rgba(255,255,255,0.45) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeUp 0.5s 0.05s ease both;
+        }
+        .hero-sub {
+            font-size: 17px; line-height: 1.7; font-weight: 300;
+            color: var(--t2); max-width: 520px; margin: 0 auto 44px;
+            animation: fadeUp 0.5s 0.1s ease both;
+        }
+
+        /* Hero stats strip */
+        .hero-stats {
+            display: inline-flex; gap: 0;
+            border: 1px solid var(--border); border-radius: var(--rl);
+            overflow: hidden; background: var(--s1);
+            animation: fadeUp 0.5s 0.15s ease both;
+        }
+        .hstat {
+            padding: 14px 28px; text-align: center;
+            border-right: 1px solid var(--border);
+        }
+        .hstat:last-child { border-right: none; }
+        .hstat-num {
+            font-family: var(--font-d); font-size: 26px; font-weight: 800;
+            letter-spacing: -1px; line-height: 1; margin-bottom: 4px;
+        }
+        .hstat-lbl {
+            font-family: var(--font-m); font-size: 10px;
+            color: var(--t3); letter-spacing: 0.8px; text-transform: uppercase;
+        }
+
+        /* ══════════════════════════════
+           MAIN CONTENT
+        ══════════════════════════════ */
+        .main {
+            max-width: 1120px; margin: 0 auto; padding: 0 24px 80px;
+        }
+
+        /* Tab nav */
+        .tab-nav {
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); margin-bottom: 40px;
+        }
+        .tabs { display: flex; }
+        .tab {
+            padding: 12px 20px; font-family: var(--font-m); font-size: 12px;
+            color: var(--t3); background: none; border: none; cursor: pointer;
+            position: relative; transition: color 0.2s; letter-spacing: 0.5px;
+        }
+        .tab.on { color: var(--t1); }
+        .tab.on::after {
+            content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+            height: 2px; border-radius: 2px 2px 0 0;
+            background: linear-gradient(90deg, var(--accent), rgba(78,255,212,0.3));
+        }
+        .tab:hover:not(.on) { color: var(--t2); }
+        .tab-meta { font-family: var(--font-m); font-size: 11px; color: var(--t4); }
+        .tc { display: none; }
+        .tc.on { display: block; }
+
+        /* ══════════════════════════════
+           SEARCH + FILTERS
+        ══════════════════════════════ */
+        .search-block { margin-bottom: 32px; animation: fadeUp 0.45s 0.05s ease both; }
+        .search-row { position: relative; margin-bottom: 14px; }
+        .search-icon {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            color: var(--t3); font-size: 16px; pointer-events: none;
+        }
+        .search-in {
+            width: 100%; padding: 14px 120px 14px 46px;
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: var(--rl); color: var(--t1);
+            font-family: var(--font-m); font-size: 13px;
+            outline: none; transition: all 0.2s;
+        }
+        .search-in::placeholder { color: var(--t4); }
+        .search-in:focus {
+            border-color: rgba(78,255,212,0.3);
+            box-shadow: 0 0 0 4px rgba(78,255,212,0.05);
+            background: var(--s2);
+        }
+        .search-hint {
+            position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            display: flex; gap: 4px;
+        }
+        .kbd {
+            font-family: var(--font-m); font-size: 10px; color: var(--t3);
+            border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px;
+            background: var(--s2);
+        }
+        .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 11px; border-radius: 999px;
+            font-family: var(--font-m); font-size: 11px;
+            border: 1px solid var(--border); color: var(--t3);
+            background: var(--s1); cursor: pointer; transition: all 0.18s;
+            user-select: none;
+        }
+        .chip:hover { border-color: var(--border-md); color: var(--t2); }
+        .chip.on { color: var(--t1); border-color: var(--border-md); background: var(--s2); }
+        .chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ══════════════════════════════
+           CATEGORY GRID
+        ══════════════════════════════ */
+        .sec-head {
+            display: flex; align-items: center; gap: 12px;
+            font-family: var(--font-m); font-size: 11px; color: var(--t4);
+            letter-spacing: 1.2px; text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .sec-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .cat-grid {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 12px; margin-bottom: 40px;
+        }
+        .cat-card {
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: var(--rl); padding: 20px;
+            cursor: pointer; transition: all 0.25s;
+            position: relative; overflow: hidden;
+            animation: fadeUp 0.5s ease both;
+        }
+        .cat-card:nth-child(1){animation-delay:0.05s}
+        .cat-card:nth-child(2){animation-delay:0.09s}
+        .cat-card:nth-child(3){animation-delay:0.13s}
+        .cat-card:nth-child(4){animation-delay:0.17s}
+        .cat-card:nth-child(5){animation-delay:0.21s}
+        .cat-card:nth-child(6){animation-delay:0.25s}
+
+        /* Color stripe */
+        .cat-card::before {
+            content: ''; position: absolute;
+            left: 0; top: 0; bottom: 0; width: 3px;
+            border-radius: var(--rl) 0 0 var(--rl);
+            transition: width 0.25s;
+        }
+        /* Gradient fill on hover */
+        .cat-card::after {
+            content: ''; position: absolute; inset: 0;
+            opacity: 0; transition: opacity 0.25s; pointer-events: none;
+        }
+        .cat-card:hover { border-color: var(--border-md); transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.35); }
+        .cat-card:hover::before { width: 4px; }
+        .cat-card:hover::after { opacity: 1; }
+
+        .c1::before { background: var(--red); }
+        .c1::after  { background: radial-gradient(ellipse at 0% 50%, rgba(255,77,106,0.06) 0%, transparent 70%); }
+        .c2::before { background: var(--purp); }
+        .c2::after  { background: radial-gradient(ellipse at 0% 50%, rgba(179,136,255,0.06) 0%, transparent 70%); }
+        .c3::before { background: var(--blue); }
+        .c3::after  { background: radial-gradient(ellipse at 0% 50%, rgba(100,181,246,0.06) 0%, transparent 70%); }
+        .c4::before { background: var(--oran); }
+        .c4::after  { background: radial-gradient(ellipse at 0% 50%, rgba(255,160,77,0.06) 0%, transparent 70%); }
+        .c5::before { background: var(--gree); }
+        .c5::after  { background: radial-gradient(ellipse at 0% 50%, rgba(77,214,138,0.06) 0%, transparent 70%); }
+        .c6::before { background: var(--yell); }
+        .c6::after  { background: radial-gradient(ellipse at 0% 50%, rgba(255,208,77,0.06) 0%, transparent 70%); }
+
+        .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; position: relative; z-index: 1; }
+        .card-icon { font-size: 22px; line-height: 1; }
+        .count-badge {
+            font-family: var(--font-m); font-size: 10px; font-weight: 500;
+            padding: 3px 8px; border-radius: 999px; letter-spacing: 0.3px;
+        }
+        .c1 .count-badge { background: var(--rdim); color: var(--red); border: 1px solid rgba(255,77,106,0.15); }
+        .c2 .count-badge { background: var(--pdim); color: var(--purp); border: 1px solid rgba(179,136,255,0.15); }
+        .c3 .count-badge { background: var(--bdim); color: var(--blue); border: 1px solid rgba(100,181,246,0.15); }
+        .c4 .count-badge { background: var(--odim); color: var(--oran); border: 1px solid rgba(255,160,77,0.15); }
+        .c5 .count-badge { background: var(--gdim); color: var(--gree); border: 1px solid rgba(77,214,138,0.15); }
+        .c6 .count-badge { background: var(--ydim); color: var(--yell); border: 1px solid rgba(255,208,77,0.15); }
+
+        .card-name { font-family: var(--font-d); font-weight: 600; font-size: 14px; color: var(--t1); margin-bottom: 7px; letter-spacing: -0.3px; position: relative; z-index: 1; }
+        .card-desc { font-size: 12px; color: var(--t3); line-height: 1.6; position: relative; z-index: 1; }
+
+        /* ══════════════════════════════
+           FEATURED PATTERN
+        ══════════════════════════════ */
+        .feat {
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: var(--rxl); padding: 28px;
+            margin-bottom: 20px; cursor: pointer; transition: all 0.2s;
+            animation: fadeUp 0.5s 0.28s ease both;
+            position: relative; overflow: hidden;
+        }
+        .feat::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(100,181,246,0.3), transparent);
+        }
+        .feat:hover { border-color: var(--border-md); background: var(--s2); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+
+        .feat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .feat-label { font-family: var(--font-m); font-size: 10px; color: var(--t3); letter-spacing: 1px; text-transform: uppercase; }
+        .feat-title { font-family: var(--font-d); font-weight: 800; font-size: 22px; color: var(--t1); letter-spacing: -0.6px; margin-bottom: 12px; }
+        .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+        .badge {
+            font-family: var(--font-m); font-size: 11px; font-weight: 400;
+            padding: 3px 9px; border-radius: 4px; letter-spacing: 0.2px;
+        }
+        .b-blue  { background: var(--bdim); color: var(--blue); border: 1px solid rgba(100,181,246,0.2); }
+        .b-red   { background: var(--rdim); color: var(--red);  border: 1px solid rgba(255,77,106,0.2); }
+        .b-oran  { background: var(--odim); color: var(--oran); border: 1px solid rgba(255,160,77,0.2); }
+        .b-gree  { background: var(--gdim); color: var(--gree); border: 1px solid rgba(77,214,138,0.2); }
+        .b-purp  { background: var(--pdim); color: var(--purp); border: 1px solid rgba(179,136,255,0.2); }
+        .b-acc   { background: var(--adim); color: var(--accent); border: 1px solid rgba(78,255,212,0.2); }
+
+        .feat-desc { font-size: 14px; color: var(--t2); line-height: 1.75; margin-bottom: 18px; font-weight: 300; }
+
+        .err-block {
+            font-family: var(--font-m); font-size: 12px; color: #ff8fa3;
+            background: rgba(255,77,106,0.05); border: 1px solid rgba(255,77,106,0.12);
+            border-left: 3px solid var(--red); padding: 12px 16px;
+            border-radius: 0 8px 8px 0; margin-bottom: 20px; line-height: 1.6;
+        }
+
+        .feat-footer { display: flex; align-items: center; justify-content: space-between; }
+        .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .tag {
+            font-family: var(--font-m); font-size: 10px; color: var(--t4);
+            background: var(--s2); border: 1px solid var(--border);
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .arr-link {
+            font-family: var(--font-m); font-size: 12px; color: var(--accent);
+            display: flex; align-items: center; gap: 5px; text-decoration: none;
+            transition: gap 0.18s; white-space: nowrap;
+        }
+        .arr-link:hover { gap: 9px; }
+
+        /* ══════════════════════════════
+           MORE PATTERNS ROW
+        ══════════════════════════════ */
+        .patterns-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 0; }
+        .pat-card {
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: var(--r); padding: 16px; cursor: pointer;
+            transition: all 0.2s; animation: fadeUp 0.5s ease both;
+        }
+        .pat-card:nth-child(1){animation-delay:0.3s}
+        .pat-card:nth-child(2){animation-delay:0.35s}
+        .pat-card:nth-child(3){animation-delay:0.4s}
+        .pat-card:hover { border-color: var(--border-md); background: var(--s2); transform: translateY(-2px); }
+        .pat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .pat-name { font-family: var(--font-d); font-weight: 600; font-size: 13px; color: var(--t1); letter-spacing: -0.2px; }
+        .sev {
+            font-family: var(--font-m); font-size: 10px; padding: 2px 7px;
+            border-radius: 4px; font-weight: 500;
+        }
+        .sev-1 { background: var(--rdim); color: var(--red); border: 1px solid rgba(255,77,106,0.2); }
+        .sev-2 { background: var(--odim); color: var(--oran); border: 1px solid rgba(255,160,77,0.2); }
+        .sev-3 { background: var(--gdim); color: var(--gree); border: 1px solid rgba(77,214,138,0.2); }
+        .pat-desc { font-size: 11.5px; color: var(--t3); line-height: 1.55; margin-bottom: 10px; }
+        .pat-foot { display: flex; align-items: center; gap: 6px; }
+        .cat-chip {
+            font-family: var(--font-m); font-size: 10px; color: var(--t3);
+            background: var(--s2); border: 1px solid var(--border);
+            padding: 2px 7px; border-radius: 4px;
+        }
+
+        /* ══════════════════════════════
+           CLASSIFIER
+        ══════════════════════════════ */
+        .cls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+
+        .panel {
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: var(--rxl); overflow: hidden;
+            animation: fadeUp 0.45s ease both;
+        }
+        .panel-r { animation-delay: 0.08s; }
+        .panel-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 22px; border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+        }
+        .panel-title {
+            display: flex; align-items: center; gap: 8px;
+            font-family: var(--font-d); font-size: 14px; font-weight: 700;
+            color: var(--t1); letter-spacing: -0.3px;
+        }
+        .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: livePulse 2s infinite; box-shadow: 0 0 6px var(--accent); }
+        .dot-done { width: 8px; height: 8px; border-radius: 50%; background: var(--gree); box-shadow: 0 0 6px var(--gree); }
+        .panel-sub { font-family: var(--font-m); font-size: 11px; color: var(--t3); }
+        .panel-body { padding: 22px; }
+
+        textarea {
+            width: 100%; min-height: 150px;
+            background: var(--s2); border: 1px solid var(--border);
+            border-radius: var(--r); color: var(--t1);
+            font-family: var(--font-m); font-size: 12.5px; line-height: 1.7;
+            padding: 14px; resize: vertical; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 14px;
+        }
+        textarea::placeholder { color: var(--t4); line-height: 1.7; }
+        textarea:focus { border-color: rgba(78,255,212,0.25); box-shadow: 0 0 0 3px rgba(78,255,212,0.06); }
+
+        .ta-footer { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .ta-hint { font-family: var(--font-m); font-size: 11px; color: var(--t4); }
+        .ta-ex { font-family: var(--font-m); font-size: 11px; color: var(--accent); cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+        .ta-ex:hover { opacity: 1; }
+
+        .btn-analyze {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none; border-radius: var(--r);
+            color: #060609; font-family: var(--font-d);
+            font-weight: 800; font-size: 14px; letter-spacing: 0.2px;
+            cursor: pointer; transition: all 0.22s; position: relative;
+        }
+        .btn-analyze::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.15), transparent);
+            border-radius: var(--r); pointer-events: none;
+        }
+        .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(78,255,212,0.25); }
+        .btn-analyze:active { transform: none; box-shadow: none; }
+        .btn-analyze.loading {
+            background: linear-gradient(135deg, rgba(78,255,212,0.25), rgba(0,212,180,0.25));
+            color: var(--accent);
+        }
+
+        /* Result panel inner */
+        .res-name { font-family: var(--font-d); font-size: 22px; font-weight: 800; color: var(--t1); letter-spacing: -0.7px; margin-bottom: 12px; }
+        .res-badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+        .res-secs { display: flex; flex-direction: column; gap: 10px; }
+        .res-sec { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; }
+        .sec-title { font-family: var(--font-m); font-size: 10px; color: var(--t3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+        .sec-body { font-size: 13px; color: var(--t2); line-height: 1.7; font-weight: 300; }
+        .hl { font-family: var(--font-m); font-size: 11px; color: var(--accent); background: var(--adim); padding: 1px 5px; border-radius: 3px; }
+        .res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+        .btn-s {
+            padding: 10px; background: var(--s2); border: 1px solid var(--border);
+            border-radius: var(--r); color: var(--t2);
+            font-family: var(--font-m); font-size: 12px; cursor: pointer;
+            transition: all 0.2s; text-align: center;
+        }
+        .btn-s:hover { border-color: var(--border-md); color: var(--t1); background: var(--s3); }
+        .btn-a {
+            padding: 10px; background: var(--adim); border: 1px solid rgba(78,255,212,0.18);
+            border-radius: var(--r); color: var(--accent);
+            font-family: var(--font-m); font-size: 12px; cursor: pointer;
+            transition: all 0.2s; text-align: center;
+        }
+        .btn-a:hover { background: rgba(78,255,212,0.14); border-color: rgba(78,255,212,0.28); }
+
+        /* Confidence bar */
+        .conf-bar { margin-top: 16px; }
+        .conf-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .conf-label { font-family: var(--font-m); font-size: 10px; color: var(--t3); letter-spacing: 0.8px; text-transform: uppercase; }
+        .conf-val { font-family: var(--font-m); font-size: 11px; color: var(--gree); }
+        .conf-track { height: 3px; background: var(--s3); border-radius: 3px; overflow: hidden; }
+        .conf-fill { height: 100%; width: 94%; background: linear-gradient(90deg, var(--gree), rgba(77,214,138,0.4)); border-radius: 3px; }
+
+        /* ══════════════════════════════
+           FOOTER
+        ══════════════════════════════ */
+        footer {
+            border-top: 1px solid var(--border);
+            background: rgba(6,6,9,0.6);
+        }
+        .ftr {
+            max-width: 1120px; margin: 0 auto; padding: 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .ftr-l { font-family: var(--font-m); font-size: 11px; color: var(--t4); }
+        .ftr-l a { color: var(--accent); text-decoration: none; }
+        .ftr-r { display: flex; gap: 16px; }
+        .ftr-link { font-family: var(--font-m); font-size: 11px; color: var(--t4); text-decoration: none; transition: color 0.2s; }
+        .ftr-link:hover { color: var(--t2); }
+
+        /* ══════════════════════════════
+           ANIMATIONS
+        ══════════════════════════════ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ══════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════ */
+        @media (max-width: 860px) {
+            .cat-grid { grid-template-columns: repeat(2, 1fr); }
+            .cls-grid { grid-template-columns: 1fr; }
+            .hero-stats { flex-direction: column; }
+            .hstat { border-right: none; border-bottom: 1px solid var(--border); }
+            .hstat:last-child { border-bottom: none; }
+            .patterns-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 540px) {
+            .cat-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-dots"></div>
+<div class="wrap">
+
+<!-- ══ HEADER ══ -->
+<header>
+    <div class="hdr">
+        <div class="logo">
+            <div class="logo-icon">LFP</div>
+            <span class="logo-name">LLM Failure Patterns <span>/ docs</span></span>
+        </div>
+        <div class="hdr-right">
+            <div class="pill">v0.4.2</div>
+            <div class="pill">⭐ <span class="star">847</span></div>
+            <div class="pill pill-accent">+ Contribute</div>
+        </div>
+    </div>
+</header>
+
+<!-- ══ HERO ══ -->
+<div class="hero">
+    <div class="hero-eyebrow">
+        <div class="live-dot"></div>
+        Open Source · Community Driven · MIT License
+    </div>
+    <h1>LLM Failure Patterns</h1>
+    <p class="hero-sub">The most comprehensive open-source database of how AI integrations fail in production — with a live classifier to diagnose your failure type instantly.</p>
+    <div class="hero-stats">
+        <div class="hstat">
+            <div class="hstat-num" style="color:var(--t1)">52</div>
+            <div class="hstat-lbl">Patterns</div>
+        </div>
+        <div class="hstat">
+            <div class="hstat-num" style="color:var(--red)">12</div>
+            <div class="hstat-lbl">Critical S1</div>
+        </div>
+        <div class="hstat">
+            <div class="hstat-num" style="color:var(--oran)">28</div>
+            <div class="hstat-lbl">Major S2</div>
+        </div>
+        <div class="hstat">
+            <div class="hstat-num" style="color:var(--gree)">12</div>
+            <div class="hstat-lbl">Minor S3</div>
+        </div>
+        <div class="hstat">
+            <div class="hstat-num" style="color:var(--accent)">6</div>
+            <div class="hstat-lbl">Categories</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+    <!-- Tab navigation -->
+    <div class="tab-nav">
+        <div class="tabs">
+            <button class="tab on" onclick="switchTab('db', this)">/ database</button>
+            <button class="tab"    onclick="switchTab('cl', this)">/ classifier</button>
+        </div>
+        <span class="tab-meta">52 patterns · updated 2 days ago</span>
+    </div>
+
+    <!-- ══ DATABASE TAB ══ -->
+    <div id="tc-db" class="tc on">
+
+        <!-- Search + Filter chips -->
+        <div class="search-block">
+            <div class="search-row">
+                <span class="search-icon">⌕</span>
+                <input type="text" class="search-in" placeholder="Search patterns, error codes, behaviors...">
+                <div class="search-hint"><span class="kbd">⌘</span><span class="kbd">K</span></div>
+            </div>
+            <div class="filter-chips">
+                <div class="chip on"><div class="chip-dot" style="background:var(--t2)"></div>All</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--red)"></div>API & Infra</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--purp)"></div>Model Behavior</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--blue)"></div>Context</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--oran)"></div>Security</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--gree)"></div>Integration</div>
+                <div class="chip"><div class="chip-dot" style="background:var(--yell)"></div>Performance</div>
+            </div>
+        </div>
+
+        <!-- Category cards -->
+        <div class="sec-head">All Categories</div>
+        <div class="cat-grid">
+            <div class="cat-card c1">
+                <div class="card-top"><div class="card-icon">🔴</div><span class="count-badge">12 patterns</span></div>
+                <div class="card-name">API & Infrastructure</div>
+                <div class="card-desc">Rate limits, timeouts, auth failures, quota exceeded, connection errors</div>
+            </div>
+            <div class="cat-card c2">
+                <div class="card-top"><div class="card-icon">🧠</div><span class="count-badge">9 patterns</span></div>
+                <div class="card-name">Model Behavior</div>
+                <div class="card-desc">Hallucinations, refusals, instruction drift, inconsistency, wrong language</div>
+            </div>
+            <div class="cat-card c3">
+                <div class="card-top"><div class="card-icon">📦</div><span class="count-badge">8 patterns</span></div>
+                <div class="card-name">Context Failures</div>
+                <div class="card-desc">Window overflow, truncation, context poisoning, memory degradation</div>
+            </div>
+            <div class="cat-card c4">
+                <div class="card-top"><div class="card-icon">🔒</div><span class="count-badge">7 patterns</span></div>
+                <div class="card-name">Security Failures</div>
+                <div class="card-desc">Prompt injection, jailbreaks, system prompt leakage, data exfiltration</div>
+            </div>
+            <div class="cat-card c5">
+                <div class="card-top"><div class="card-icon">⚙️</div><span class="count-badge">10 patterns</span></div>
+                <div class="card-name">Integration Failures</div>
+                <div class="card-desc">JSON parse errors, tool call failures, streaming drops, format violations</div>
+            </div>
+            <div class="cat-card c6">
+                <div class="card-top"><div class="card-icon">💸</div><span class="count-badge">6 patterns</span></div>
+                <div class="card-name">Performance Failures</div>
+                <div class="card-desc">Latency spikes, cost explosions, token inefficiency, cold start delays</div>
+            </div>
+        </div>
+
+        <!-- Featured pattern -->
+        <div class="sec-head">Featured Pattern</div>
+        <div class="feat">
+            <div class="feat-header">
+                <span class="feat-label">Context Failures</span>
+            </div>
+            <div class="feat-title">Context Window Overflow</div>
+            <div class="badge-row">
+                <span class="badge b-blue">📦 Context Failures</span>
+                <span class="badge b-oran">S2 — Major</span>
+                <span class="badge b-acc">HTTP 400</span>
+            </div>
+            <p class="feat-desc">When total token count (system prompt + conversation history + user input + expected output) exceeds the model's maximum context window. Results in hard API errors or silent truncation of early context — causing the model to "forget" its original instructions mid-conversation.</p>
+            <div class="err-block">Error 400: "This model's maximum context length is 128,000 tokens.<br>However, your messages resulted in 131,847 tokens. Please reduce the length of the messages."</div>
+            <div class="feat-footer">
+                <div class="tag-row">
+                    <span class="tag">context</span>
+                    <span class="tag">truncation</span>
+                    <span class="tag">memory</span>
+                    <span class="tag">tokens</span>
+                    <span class="tag">400-error</span>
+                </div>
+                <a href="#" class="arr-link">View full pattern →</a>
+            </div>
+        </div>
+
+        <!-- More patterns -->
+        <div class="sec-head" style="margin-top:32px">More Patterns</div>
+        <div class="patterns-row">
+            <div class="pat-card">
+                <div class="pat-top"><div class="pat-name">Rate Limit Exceeded</div><span class="sev sev-2">S2</span></div>
+                <div class="pat-desc">Provider throttles requests when RPM/TPM limits are hit. App stops functioning mid-session.</div>
+                <div class="pat-foot"><span class="cat-chip">🔴 API & Infra</span><span class="cat-chip">HTTP 429</span></div>
+            </div>
+            <div class="pat-card">
+                <div class="pat-top"><div class="pat-name">Prompt Injection Attack</div><span class="sev sev-1">S1</span></div>
+                <div class="pat-desc">Malicious user input overwrites or hijacks system instructions silently.</div>
+                <div class="pat-foot"><span class="cat-chip">🔒 Security</span><span class="cat-chip">Silent</span></div>
+            </div>
+            <div class="pat-card">
+                <div class="pat-top"><div class="pat-name">JSON Parsing Failure</div><span class="sev sev-2">S2</span></div>
+                <div class="pat-desc">Model returns malformed JSON when structured output is required — app crashes on parse.</div>
+                <div class="pat-foot"><span class="cat-chip">⚙️ Integration</span><span class="cat-chip">Parse Error</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CLASSIFIER TAB ══ -->
+    <div id="tc-cl" class="tc">
+        <div class="cls-grid">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title"><div class="dot-live"></div>Classify Your Failure</div>
+                    <span class="panel-sub">powered by Claude</span>
+                </div>
+                <div class="panel-body">
+                    <textarea id="ta" placeholder="Paste your error message or describe what went wrong...
+
+e.g. My app keeps getting Error 429 after about 60 requests per minute and everything stops working for a while before recovering."></textarea>
+                    <div class="ta-footer">
+                        <span class="ta-hint">Supports error codes, descriptions, stack traces</span>
+                        <span class="ta-ex" onclick="loadEx()">load example →</span>
+                    </div>
+                    <button class="btn-analyze" id="abtn" onclick="runAnalyze()">⚡ Analyze Failure</button>
+                </div>
+            </div>
+            <div class="panel panel-r">
+                <div class="panel-head">
+                    <div class="panel-title"><div class="dot-done"></div>Analysis Complete</div>
+                    <span class="panel-sub">94% confidence</span>
+                </div>
+                <div class="panel-body">
+                    <div class="res-name">Rate Limit Exceeded</div>
+                    <div class="res-badge-row">
+                        <span class="badge b-red">🔴 API & Infrastructure</span>
+                        <span class="badge b-oran">S2 — Major</span>
+                        <span class="badge b-acc">HTTP 429</span>
+                    </div>
+                    <div class="res-secs">
+                        <div class="res-sec">
+                            <div class="sec-title">🔍 What's happening</div>
+                            <div class="sec-body">Your application is hitting the provider's <span class="hl">RPM limit</span>. After ~60 requests the API returns <span class="hl">HTTP 429</span> and throttles your account. Auto-recovery happens when the rate window resets every 60 seconds.</div>
+                        </div>
+                        <div class="res-sec">
+                            <div class="sec-title">⚡ Immediate fix</div>
+                            <div class="sec-body">Add <span class="hl">exponential backoff</span>: wait 1s → 2s → 4s between retries. Set <span class="hl">max_retries=3</span> in your client config right now — most SDKs support this natively.</div>
+                        </div>
+                        <div class="res-sec">
+                            <div class="sec-title">🛡️ Prevention</div>
+                            <div class="sec-body">Implement a <span class="hl">request queue</span> with client-side rate limiting. Track RPM usage and buffer before the limit. Upgrade tier if traffic demands it.</div>
+                        </div>
+                    </div>
+                    <div class="conf-bar">
+                        <div class="conf-row">
+                            <span class="conf-label">Match Confidence</span>
+                            <span class="conf-val">94%</span>
+                        </div>
+                        <div class="conf-track"><div class="conf-fill"></div></div>
+                    </div>
+                    <div class="res-actions">
+                        <button class="btn-s" onclick="copyRep()">📋 Copy Report</button>
+                        <button class="btn-a">View Full Pattern →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+    <div class="ftr">
+        <div class="ftr-l">Built for the AI engineering community · <a href="#">Open Source</a> · MIT License</div>
+        <div class="ftr-r">
+            <a href="#" class="ftr-link">GitHub</a>
+            <a href="#" class="ftr-link">Contribute</a>
+            <a href="#" class="ftr-link">Changelog</a>
+        </div>
+    </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function switchTab(id, el) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.tc').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('tc-' + id).classList.add('on');
+}
+
+function runAnalyze() {
+    const btn = document.getElementById('abtn');
+    btn.textContent = '⟳ Analyzing...';
+    btn.classList.add('loading');
+    btn.disabled = true;
+    setTimeout(() => {
+        btn.textContent = '⚡ Analyze Failure';
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }, 1800);
+}
+
+function loadEx() {
+    document.getElementById('ta').value =
+        'My app keeps getting Error 429 after about 60 requests per minute and everything stops working for a while before recovering automatically.';
+}
+
+function copyRep() {
+    const r = `LLM FAILURE REPORT\n==================\nFailure: Rate Limit Exceeded\nCategory: API & Infrastructure\nSeverity: S2 — Major\nError: HTTP 429\n\nWhat's happening: Hitting RPM limit after ~60 requests.\nImmediate fix: Add exponential backoff (1s→2s→4s).\nPrevention: Request queue with client-side rate limiting.`;
+    navigator.clipboard.writeText(r).catch(()=>{});
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy Report', 1500);
+}
+
+// Chip toggle
+document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+        c.classList.add('on');
+    });
+});
+</script>
+</body>
+</html>
