@@ -593,7 +593,8 @@
             border-bottom: 1px solid var(--border);
         }
         .afield:nth-child(3n) { border-right: none; }
-        .afield:nth-child(4), .afield:nth-child(5), .afield:nth-child(6) { border-bottom: none; }
+        .afield:nth-child(4), .afield:nth-child(5), .afield:nth-child(6) { border-bottom: 1px solid var(--border); }
+        .afield-last { border-bottom: none; }
         .afield-key {
             font-family: var(--font-m); font-size: 10px; color: var(--accent);
             letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
@@ -637,6 +638,26 @@
             letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px;
         }
         .by-desc { font-size: 11.5px; color: var(--t3); line-height: 1.5; }
+
+        /* ══════════════════════════════
+           FULL PATTERN CARDS
+        ══════════════════════════════ */
+        .pat-full { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
+        .pat-full:hover { border-color: var(--border-md); }
+        .pat-full-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; user-select: none; }
+        .pat-full-head:hover { background: rgba(255,255,255,0.02); }
+        .pat-full-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .pat-full-name { font-weight: 600; font-size: 14px; color: var(--t1); letter-spacing: -0.2px; }
+        .pat-full-body { display: none; padding: 0 20px 20px; border-top: 1px solid var(--border); }
+        .pat-full-body.open { display: block; }
+        .pat-fields { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 16px; }
+        .pf-field { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; }
+        .pf-key { font-family: var(--font-m); font-size: 10px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+        .pf-val { font-size: 12.5px; color: var(--t2); line-height: 1.7; font-weight: 300; }
+        .pf-val code { font-family: var(--font-m); font-size: 11px; color: var(--accent); background: var(--adim); padding: 1px 5px; border-radius: 3px; }
+        .toggle-icon { font-family: var(--font-m); font-size: 16px; color: var(--t3); transition: transform 0.2s; flex-shrink: 0; }
+        .toggle-icon.open { transform: rotate(180deg); }
+        @media (max-width: 640px) { .pat-fields { grid-template-columns: 1fr; } }
 
         /* ══════════════════════════════
            ANIMATIONS
@@ -714,7 +735,7 @@
             <div class="hstat-lbl">Categories</div>
         </div>
         <div class="hstat">
-            <div class="hstat-num" style="color:var(--purp)">6</div>
+            <div class="hstat-num" style="color:var(--purp)">7</div>
             <div class="hstat-lbl">Fields / Pattern</div>
         </div>
         <div class="hstat">
@@ -853,7 +874,7 @@
         <div class="anatomy-wrap">
             <div class="anatomy-head">
                 <span class="anatomy-title">Pattern Schema</span>
-                <span class="anatomy-sub">6 fields per pattern · consistent structure across all 52 entries</span>
+                <span class="anatomy-sub">7 fields per pattern · consistent structure across all 10 entries</span>
             </div>
             <div class="anatomy-grid">
                 <div class="afield">
@@ -886,26 +907,244 @@
                     <div class="afield-label">Prevention</div>
                     <div class="afield-ex">What to build so this never happens again. e.g. token budget tracking, proactive summarisation at 80% window capacity</div>
                 </div>
+                <div class="afield afield-last">
+                    <div class="afield-key">field 7</div>
+                    <div class="afield-label">Eval Coverage</div>
+                    <div class="afield-ex">What automated test catches this. e.g. <code>adversarial prompt eval</code>, <code>format compliance eval</code>, <code>token budget eval</code></div>
+                </div>
             </div>
         </div>
 
-        <!-- More patterns -->
-        <div class="sec-head" style="margin-top:32px">More Patterns</div>
-        <div class="patterns-row">
-            <div class="pat-card">
-                <div class="pat-top"><div class="pat-name">Rate Limit Exceeded</div><span class="sev sev-2">S2</span></div>
-                <div class="pat-desc">Provider throttles requests when RPM/TPM limits are hit. App stops functioning mid-session.</div>
-                <div class="pat-foot"><span class="cat-chip">🔴 API & Infra</span><span class="cat-chip">HTTP 429</span></div>
+        <!-- All patterns -->
+        <div class="sec-head" style="margin-top:32px">All Patterns — click to expand</div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Rate Limit Exceeded</span>
+                    <span class="badge b-red">🔴 API & Infra</span>
+                    <span class="sev sev-2">S2</span>
+                    <span class="badge b-acc">HTTP 429</span>
+                </div>
+                <span class="toggle-icon">▾</span>
             </div>
-            <div class="pat-card">
-                <div class="pat-top"><div class="pat-name">Prompt Injection Attack</div><span class="sev sev-1">S1</span></div>
-                <div class="pat-desc">Malicious user input overwrites or hijacks system instructions silently.</div>
-                <div class="pat-foot"><span class="cat-chip">🔒 Security</span><span class="cat-chip">Silent</span></div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">HTTP 429 errors after burst of requests, app stops functioning mid-session</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Provider RPM/TPM quota exhausted. API throttles all requests until the rate window resets (~60s)</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">All users during the rate window. Auto-recovers but causes a visible outage for the duration</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S2 — app degrades but recovers automatically, no data loss, workaround exists via backoff</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Add exponential backoff: 1s, 2s, 4s. Set <code>max_retries=3</code> in your client config right now</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Client-side request queue with RPM counter, buffer requests before the limit, upgrade tier if traffic demands it</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Rate resilience eval — send 70 req/min, assert less than 5% fail with backoff implemented</div></div>
+                </div>
             </div>
-            <div class="pat-card">
-                <div class="pat-top"><div class="pat-name">JSON Parsing Failure</div><span class="sev sev-2">S2</span></div>
-                <div class="pat-desc">Model returns malformed JSON when structured output is required — app crashes on parse.</div>
-                <div class="pat-foot"><span class="cat-chip">⚙️ Integration</span><span class="cat-chip">Parse Error</span></div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Prompt Injection Attack</span>
+                    <span class="badge b-purp">🔒 Security</span>
+                    <span class="sev sev-1">S1</span>
+                    <span class="badge b-red">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Model follows instructions embedded in user input, ignores or overrides the system prompt</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">No separation between trusted instructions and untrusted user data in prompt construction</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">All users if system-level compromise. Potential data exfiltration. No error thrown — completely silent</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S1 — silent failure, no error signal, security boundary violated, data leakage possible</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Add instruction boundary markers in your prompt. Sanitise all user input before inserting into context</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Structured message roles (system/user/assistant), strict input validation, adversarial test suite in CI</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Adversarial eval — send 50 known injection payloads, assert 0 succeed in hijacking system instructions</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">JSON Parsing Failure</span>
+                    <span class="badge b-gree">⚙️ Integration</span>
+                    <span class="sev sev-2">S2</span>
+                    <span class="badge b-oran">Parse Error</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">App crashes with <code>JSON.parse</code> error or TypeError on model response</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Model wraps JSON in markdown fences, truncates output, or adds prose before/after the JSON object</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">All requests to that endpoint. Intermittent — typically 10–30% failure rate without output guardrails</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S2 — app breaks but retry usually succeeds, no data loss, fix is well-understood</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Strip markdown fences before parsing, add try/catch with a single retry on parse failure</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Use structured output API mode (<code>response_format: json_object</code>), validate schema on every response</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Format compliance eval — 100 structured output requests, assert 100% return parseable valid JSON</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Hallucination Cascade</span>
+                    <span class="badge b-purp">🧠 Model Behavior</span>
+                    <span class="sev sev-1">S1</span>
+                    <span class="badge b-red">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Model confidently states wrong facts. Downstream logic built on incorrect output amplifies the error</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Model generates plausible-sounding content not grounded in provided context or verifiable reality</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">Any user relying on factual output. Cascades badly when one hallucination feeds the next prompt in a chain</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S1 — completely silent, no error signal, user may take real-world action based on fabricated information</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Add to system prompt: "Only state what you can verify from the provided context. Say you don't know otherwise."</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">RAG grounding for factual queries, factual consistency eval in CI, human review gate for high-stakes outputs</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Factual accuracy eval — 50 questions with known ground truth answers, assert more than 95% correct</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Silent Context Truncation</span>
+                    <span class="badge b-blue">📦 Context</span>
+                    <span class="sev sev-2">S2</span>
+                    <span class="badge b-red">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Model ignores earlier instructions or user data mid-conversation with no error thrown</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Context exceeds the window but the API silently drops oldest messages rather than returning HTTP 400</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">Long sessions where early system instructions or critical user context gets silently discarded</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S2 — no crash but produces subtly wrong outputs, very hard to detect without active token monitoring</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Add token counter per request. Implement a sliding window that always reserves the system prompt slot</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Reserve a fixed token budget for the system prompt. Summarise conversation history when approaching 80% window</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Memory eval — assert model recalls a specific instruction from turn 1 after 50+ subsequent turns</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Streaming Interruption</span>
+                    <span class="badge b-gree">⚙️ Integration</span>
+                    <span class="sev sev-2">S2</span>
+                    <span class="badge b-oran">Network</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Stream cuts mid-response, UI shows partial text, app hangs waiting for the completion signal</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Network timeout or provider-side interruption during a streaming response with no recovery mechanism</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">Users with long responses or unstable connections. UX breaks mid-sentence, requires manual retry</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S2 — user sees broken output and must retry, no data loss, but degrades trust in the product</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Add stream timeout handler (30s), buffer partial response, surface a retry button to the user</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Stream health check with reconnect logic, automatic retry with exponential backoff on disconnect</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Resilience eval — simulate 20% packet drop during streaming, assert all responses complete or retry gracefully</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Model Deprecation Breaking Change</span>
+                    <span class="badge b-red">🔴 API & Infra</span>
+                    <span class="sev sev-3">S3</span>
+                    <span class="badge b-acc">HTTP 404</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Suddenly receiving model-not-found or 404 errors after the integration worked fine for months</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Provider deprecated the specific model version ID in use. No automatic migration happens</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">100% of requests to that model ID. Affects all users until the model ID is updated in config</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S3 — trivial fix (update model ID string) but silent until it breaks in production with no warning</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Update model ID to current supported version in your config or environment variable</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Never hardcode model IDs. Use env vars. Subscribe to provider deprecation notices. Pin to stable aliases where available</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Smoke eval — daily ping to assert current model ID resolves without 404, alert on first failure</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Tool Call Hallucination</span>
+                    <span class="badge b-purp">🧠 Model Behavior</span>
+                    <span class="sev sev-1">S1</span>
+                    <span class="badge b-red">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Agent invokes tool names or passes parameters that do not exist in the defined tool schema</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Model generates plausible-looking tool calls not grounded in the available tool definitions provided</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">Agent workflows break silently or crash at runtime. Potential for destructive or irreversible operations</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S1 — agent takes wrong action silently, no error from the model itself, real-world consequences possible</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Validate all tool calls against the schema before execution. Reject and log any unknown tool names</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Strict tool schema validation layer, tool allow-list, human approval step for all irreversible tool actions</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Tool grounding eval — assert 100% of generated tool calls use valid names and parameters from the schema</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Cost Explosion</span>
+                    <span class="badge b-acc">💸 Performance</span>
+                    <span class="sev sev-1">S1</span>
+                    <span class="badge b-red">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">API bill is 10–100x expected. Traced to a specific endpoint or runaway loop that ran unchecked</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Missing <code>max_tokens</code> guard, accidental prompt duplication in a loop, or unbounded recursive agent calls</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">Immediate financial impact. In a loop, can exhaust the entire monthly quota within minutes</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S1 — financial damage, may require emergency shutdown, silent until the invoice or budget alert fires</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Set <code>max_tokens</code> on every request right now. Kill the runaway process. Check for loops in agent chains</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Token budget per request and per user. Cost anomaly alert at 2x baseline spend. Hard monthly spend cap</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Cost governance eval — assert every request includes <code>max_tokens</code>, assert cost per request within 2x p95 baseline</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pat-full">
+            <div class="pat-full-head">
+                <div class="pat-full-left">
+                    <span class="pat-full-name">Permission Scope Mismatch</span>
+                    <span class="badge b-gree">⚙️ Integration</span>
+                    <span class="sev sev-3">S3</span>
+                    <span class="badge b-oran">Silent</span>
+                </div>
+                <span class="toggle-icon">▾</span>
+            </div>
+            <div class="pat-full-body">
+                <div class="pat-fields">
+                    <div class="pf-field"><div class="pf-key">Symptom</div><div class="pf-val">Claude can perform an action in one context (personal chat) but silently fails in another (work/team account)</div></div>
+                    <div class="pf-field"><div class="pf-key">Root Cause</div><div class="pf-val">Workspace admin policy or OAuth connection restricts which tool permissions Claude has in the team context</div></div>
+                    <div class="pf-field"><div class="pf-key">Blast Radius</div><div class="pf-val">All team members hit the same invisible capability wall. Workflows built on personal-account behaviour break silently</div></div>
+                    <div class="pf-field"><div class="pf-key">Severity Rationale</div><div class="pf-val">S3 — workaround exists (use personal account or ask admin), but the silent failure causes wasted debugging time</div></div>
+                    <div class="pf-field"><div class="pf-key">Immediate Mitigation</div><div class="pf-val">Check workspace admin settings for tool permissions. Use personal Claude for the blocked action as a temporary workaround</div></div>
+                    <div class="pf-field"><div class="pf-key">Prevention</div><div class="pf-val">Before building team workflows, audit which tool permissions are active. Do not assume feature parity with personal Claude</div></div>
+                    <div class="pf-field"><div class="pf-key">Eval Coverage</div><div class="pf-val">Capability parity eval — run the same action in both contexts, assert consistent results or surface a clear permission error</div></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1053,6 +1292,16 @@ function copyRep() {
     btn.textContent = '✓ Copied!';
     setTimeout(() => btn.textContent = '📋 Copy Report', 1500);
 }
+
+// Pattern card toggle
+document.querySelectorAll('.pat-full-head').forEach(h => {
+    h.addEventListener('click', () => {
+        const body = h.nextElementSibling;
+        const icon = h.querySelector('.toggle-icon');
+        body.classList.toggle('open');
+        icon.classList.toggle('open');
+    });
+});
 
 // Chip toggle
 document.querySelectorAll('.chip').forEach(c => {
